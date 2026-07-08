@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ project.name }} — ProjectFlow{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{% url 'projects:project_list' %}">Projects</a></li>
+    <li class="breadcrumb-item active">{{ project.name }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <!-- Project Header -->
+  <div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <h4 class="fw-bold mb-0">{{ project.name }}</h4>
+        <span class="badge bg-primary-subtle text-primary">
+          {{ user_membership.get_role_display }}
+        </span>
+      </div>
+      {% if project.description %}
+        <p class="text-muted mb-0">{{ project.description }}</p>
+      {% endif %}
+      <div class="d-flex gap-3 mt-2 small text-muted">
+        <span><i class="bi bi-people me-1"></i>{{ members.count }} member{{ members.count|pluralize }}</span>
+        <span><i class="bi bi-list-task me-1"></i>{{ project.get_task_count }} task{{ project.get_task_count|pluralize }}</span>
+        <span><i class="bi bi-calendar3 me-1"></i>{{ project.created_at|date:"M j, Y" }}</span>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{% url 'projects:project_members' project.pk %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-people me-1"></i>Members
+      </a>
+      <a href="{% url 'tasks:task_create' project.pk %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>Add Task
+      </a>
+      {% if is_owner_or_admin %}
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+            <i class="bi bi-gear me-1"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+              <a class="dropdown-item" href="{% url 'projects:project_edit' project.pk %}">
+                <i class="bi bi-pencil me-2"></i>Edit Project
+              </a>
+            </li>
+            {% if project.owner == request.user %}
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <a class="dropdown-item text-danger" href="#"
+                   data-bs-toggle="modal" data-bs-target="#deleteProjectModal">
+                  <i class="bi bi-trash me-2"></i>Delete Project
+                </a>
+              </li>
+            {% endif %}
+          </ul>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Flash messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-3" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Kanban Board -->
+  <div class="kanban-board">
+
+    <!-- TO DO Column -->
+    <div class="kanban-column">
+      <div class="kanban-col-header kanban-todo">
+        <div class="d-flex align-items-center gap-2">
+          <span class="kanban-dot"></span>
+          <span class="fw-semibold">To Do</span>
+          <span class="kanban-count">{{ tasks_todo.count }}</span>
+        </div>
+        <a href="{% url 'tasks:task_create' project.pk %}?status=todo" class="kanban-add-btn" title="Add task">
+          <i class="bi bi-plus"></i>
+        </a>
+      </div>
+      <div class="kanban-cards">
+        {% for task in tasks_todo %}
+          {% include 'tasks/task_card.html' with task=task %}
+        {% empty %}
+          <div class="kanban-empty">
+            <i class="bi bi-inbox"></i>
+            <p>No tasks yet</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- IN PROGRESS Column -->
+    <div class="kanban-column">
+      <div class="kanban-col-header kanban-inprogress">
+        <div class="d-flex align-items-center gap-2">
+          <span class="kanban-dot"></span>
+          <span class="fw-semibold">In Progress</span>
+          <span class="kanban-count">{{ tasks_inprogress.count }}</span>
+        </div>
+        <a href="{% url 'tasks:task_create' project.pk %}?status=inprogress" class="kanban-add-btn" title="Add task">
+          <i class="bi bi-plus"></i>
+        </a>
+      </div>
+      <div class="kanban-cards">
+        {% for task in tasks_inprogress %}
+          {% include 'tasks/task_card.html' with task=task %}
+        {% empty %}
+          <div class="kanban-empty">
+            <i class="bi bi-arrow-repeat"></i>
+            <p>Nothing in progress</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- DONE Column -->
+    <div class="kanban-column">
+      <div class="kanban-col-header kanban-done">
+        <div class="d-flex align-items-center gap-2">
+          <span class="kanban-dot"></span>
+          <span class="fw-semibold">Done</span>
+          <span class="kanban-count">{{ tasks_done.count }}</span>
+        </div>
+        <a href="{% url 'tasks:task_create' project.pk %}?status=done" class="kanban-add-btn" title="Add task">
+          <i class="bi bi-plus"></i>
+        </a>
+      </div>
+      <div class="kanban-cards">
+        {% for task in tasks_done %}
+          {% include 'tasks/task_card.html' with task=task %}
+        {% empty %}
+          <div class="kanban-empty">
+            <i class="bi bi-check2-circle"></i>
+            <p>No completed tasks</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div><!-- /kanban-board -->
+</div>
+
+<!-- Delete Project Modal -->
+{% if project.owner == request.user %}
+<div class="modal fade" id="deleteProjectModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">
+          <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Delete Project
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete <strong>{{ project.name }}</strong>?</p>
+        <p class="text-danger small mb-0">
+          <i class="bi bi-exclamation-circle me-1"></i>
+          This will permanently delete all tasks, comments, and project data. This action cannot be undone.
+        </p>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <form method="post" action="{% url 'projects:project_delete' project.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">
+            <i class="bi bi-trash me-1"></i>Delete Project
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

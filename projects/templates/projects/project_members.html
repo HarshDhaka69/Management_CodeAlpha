@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Members — {{ project.name }} — ProjectFlow{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{% url 'projects:project_list' %}">Projects</a></li>
+    <li class="breadcrumb-item">
+      <a href="{% url 'projects:project_detail' project.pk %}">{{ project.name }}</a>
+    </li>
+    <li class="breadcrumb-item active">Members</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 760px;">
+
+  <!-- Page header -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h4 class="fw-bold mb-1">
+        <i class="bi bi-people-fill me-2 text-primary"></i>Team Members
+      </h4>
+      <p class="text-muted mb-0">{{ project.name }} · {{ members.count }} member{{ members.count|pluralize }}</p>
+    </div>
+    <a href="{% url 'projects:project_detail' project.pk %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Back to Board
+    </a>
+  </div>
+
+  <!-- Flash messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Add Member Form (owner/admin only) -->
+  {% if is_owner_or_admin %}
+    <div class="card card-custom mb-4">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <h6 class="fw-semibold mb-0">
+          <i class="bi bi-person-plus me-2 text-success"></i>Add New Member
+        </h6>
+      </div>
+      <div class="card-body">
+        <form method="post" class="row g-2 align-items-end">
+          {% csrf_token %}
+          <div class="col">
+            <label class="form-label fw-medium">Username</label>
+            <input type="text" name="username" class="form-control"
+                   placeholder="Enter exact username..." required autocomplete="off">
+          </div>
+          <div class="col-auto">
+            <button type="submit" class="btn btn-success">
+              <i class="bi bi-plus-lg me-1"></i>Add Member
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Members List -->
+  <div class="card card-custom">
+    <div class="card-header bg-transparent border-0 pb-0">
+      <h6 class="fw-semibold mb-0">
+        <i class="bi bi-people me-2 text-primary"></i>Current Members
+      </h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="member-list">
+        {% for membership in members %}
+          <div class="member-list-item">
+            <!-- Avatar -->
+            <div class="member-avatar">
+              {% if membership.user.profile.get_avatar_url %}
+                <img src="{{ membership.user.profile.get_avatar_url }}"
+                     alt="{{ membership.user.username }}"
+                     class="avatar-md">
+              {% else %}
+                <div class="avatar-md avatar-placeholder">
+                  {{ membership.user.username|first|upper }}
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Info -->
+            <div class="flex-grow-1 min-w-0">
+              <div class="d-flex align-items-center gap-2 mb-0">
+                <a href="{% url 'accounts:profile_user' membership.user.username %}"
+                   class="fw-semibold text-decoration-none text-dark">
+                  {{ membership.user.get_full_name|default:membership.user.username }}
+                </a>
+                {% if membership.role == 'owner' %}
+                  <span class="badge bg-primary">Owner</span>
+                {% elif membership.role == 'admin' %}
+                  <span class="badge bg-secondary">Admin</span>
+                {% else %}
+                  <span class="badge bg-light text-dark">Member</span>
+                {% endif %}
+                {% if membership.user == request.user %}
+                  <span class="badge bg-success-subtle text-success">You</span>
+                {% endif %}
+              </div>
+              <div class="text-muted small">
+                @{{ membership.user.username }} · Joined {{ membership.joined_at|date:"M j, Y" }}
+              </div>
+            </div>
+
+            <!-- Remove button (owner/admin only, can't remove owner) -->
+            {% if is_owner_or_admin and membership.user != project.owner and membership.user != request.user %}
+              <form method="post"
+                    action="{% url 'projects:remove_member' project.pk membership.user.pk %}"
+                    onsubmit="return confirm('Remove {{ membership.user.username }} from this project?')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger"
+                        title="Remove member">
+                  <i class="bi bi-person-x"></i>
+                </button>
+              </form>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

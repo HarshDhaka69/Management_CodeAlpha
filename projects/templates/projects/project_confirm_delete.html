@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete {{ project.name }} — ProjectFlow{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 500px;">
+  <div class="card card-custom border-danger">
+    <div class="card-body text-center p-5">
+      <div class="mb-3" style="font-size: 3rem; color: var(--danger);">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </div>
+      <h4 class="fw-bold mb-2">Delete Project</h4>
+      <p class="text-muted mb-1">You are about to permanently delete:</p>
+      <p class="fw-bold fs-5 mb-3">{{ project.name }}</p>
+      <p class="text-danger small mb-4">
+        All tasks, comments, and member data will be lost forever. This cannot be undone.
+      </p>
+      <div class="d-flex gap-2 justify-content-center">
+        <a href="{% url 'projects:project_detail' project.pk %}" class="btn btn-outline-secondary">
+          Cancel
+        </a>
+        <form method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">
+            <i class="bi bi-trash me-1"></i>Yes, Delete
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}My Projects — ProjectFlow{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item active">My Projects</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Page Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h4 class="fw-bold mb-1">My Projects</h4>
+      <p class="text-muted mb-0">{{ projects|length }} project{{ projects|length|pluralize }} you're a part of</p>
+    </div>
+    <a href="{% url 'projects:project_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i>New Project
+    </a>
+  </div>
+
+  <!-- Flash Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        <i class="bi bi-info-circle me-2"></i>{{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Projects Grid -->
+  {% if projects %}
+    <div class="row g-4">
+      {% for project in projects %}
+        <div class="col-sm-6 col-xl-4">
+          <div class="card card-custom project-card h-100">
+            <!-- Color accent bar -->
+            <div class="project-card-accent"></div>
+            <div class="card-body p-4">
+
+              <!-- Project Name -->
+              <div class="d-flex align-items-start justify-content-between mb-2">
+                <h5 class="fw-bold mb-0 me-2">
+                  <a href="{% url 'projects:project_detail' project.pk %}"
+                     class="text-decoration-none text-dark stretched-link-inner">
+                    {{ project.name }}
+                  </a>
+                </h5>
+                {% if project.owner == request.user %}
+                  <span class="badge bg-primary-subtle text-primary fw-medium">Owner</span>
+                {% endif %}
+              </div>
+
+              <!-- Description -->
+              <p class="text-muted small mb-3">
+                {% if project.description %}
+                  {{ project.description|truncatechars:100 }}
+                {% else %}
+                  <em>No description provided.</em>
+                {% endif %}
+              </p>
+
+              <!-- Stats row -->
+              <div class="d-flex gap-3 mb-3">
+                <div class="d-flex align-items-center gap-1 text-muted small">
+                  <i class="bi bi-list-task text-primary"></i>
+                  {{ project.get_task_count }} task{{ project.get_task_count|pluralize }}
+                </div>
+                <div class="d-flex align-items-center gap-1 text-muted small">
+                  <i class="bi bi-people text-primary"></i>
+                  {{ project.get_member_count }} member{{ project.get_member_count|pluralize }}
+                </div>
+              </div>
+
+              <!-- Member Avatars -->
+              <div class="d-flex align-items-center justify-content-between">
+                <div class="avatar-stack">
+                  {% for membership in project.projectmember_set.all|slice:":4" %}
+                    {% if membership.user.profile.get_avatar_url %}
+                      <img src="{{ membership.user.profile.get_avatar_url }}"
+                           class="avatar-sm avatar-stacked"
+                           alt="{{ membership.user.username }}"
+                           title="{{ membership.user.username }}">
+                    {% else %}
+                      <div class="avatar-sm avatar-stacked avatar-placeholder-sm"
+                           title="{{ membership.user.username }}">
+                        {{ membership.user.username|first|upper }}
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                  {% if project.get_member_count > 4 %}
+                    <div class="avatar-sm avatar-stacked avatar-more">+{{ project.get_member_count|add:"-4" }}</div>
+                  {% endif %}
+                </div>
+                <a href="{% url 'projects:project_detail' project.pk %}"
+                   class="btn btn-sm btn-outline-primary">
+                  Open <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+              </div>
+
+            </div>
+            <!-- Created date footer -->
+            <div class="card-footer bg-transparent border-0 py-2 px-4">
+              <small class="text-muted">
+                <i class="bi bi-clock me-1"></i>
+                Created {{ project.created_at|date:"M j, Y" }}
+              </small>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+
+      <!-- Add new project card -->
+      <div class="col-sm-6 col-xl-4">
+        <a href="{% url 'projects:project_create' %}" class="text-decoration-none">
+          <div class="card card-custom project-card project-card-new h-100 d-flex align-items-center justify-content-center">
+            <div class="text-center p-4">
+              <div class="new-project-icon mb-3">
+                <i class="bi bi-plus-circle"></i>
+              </div>
+              <h6 class="fw-semibold text-primary mb-1">Create New Project</h6>
+              <p class="text-muted small mb-0">Start collaborating with your team</p>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+  {% else %}
+    <!-- Empty State -->
+    <div class="empty-state text-center py-5 mt-4">
+      <div class="empty-state-icon mb-4">
+        <i class="bi bi-folder-plus"></i>
+      </div>
+      <h4 class="fw-bold">No projects yet</h4>
+      <p class="text-muted mb-4">
+        Create your first project and start organizing tasks with your team.
+      </p>
+      <a href="{% url 'projects:project_create' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-plus-lg me-2"></i>Create Your First Project
+      </a>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
