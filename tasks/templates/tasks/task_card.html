@@ -1,0 +1,178 @@
+{% load static %}
+
+<div class="task-card" data-task-id="{{ task.pk }}">
+  <!-- Priority indicator bar -->
+  <div class="task-priority-bar priority-{{ task.priority }}"></div>
+
+  <div class="task-card-body">
+    <!-- Title -->
+    <a href="{% url 'tasks:task_detail' task.pk %}" class="task-card-title">
+      {{ task.title }}
+    </a>
+
+    <!-- Description preview -->
+    {% if task.description %}
+      <p class="task-card-desc">{{ task.description|truncatechars:80 }}</p>
+    {% endif %}
+
+    <!-- Meta row -->
+    <div class="task-card-meta">
+
+      <!-- Priority badge -->
+      <span class="priority-badge priority-{{ task.priority }}">
+        {% if task.priority == 'high' %}
+          <i class="bi bi-arrow-up-circle-fill me-1"></i>High
+        {% elif task.priority == 'medium' %}
+          <i class="bi bi-dash-circle-fill me-1"></i>Medium
+        {% else %}
+          <i class="bi bi-arrow-down-circle-fill me-1"></i>Low
+        {% endif %}
+      </span>
+
+      <!-- Due date -->
+      {% if task.due_date %}
+        {% if task.is_overdue %}
+          <span class="due-badge due-overdue">
+            <i class="bi bi-clock-fill me-1"></i>Overdue
+          </span>
+        {% else %}
+          <span class="due-badge due-normal">
+            <i class="bi bi-calendar3 me-1"></i>{{ task.due_date|date:"M j" }}
+          </span>
+        {% endif %}
+      {% endif %}
+
+      <!-- Comments count -->
+      {% with count=task.get_comment_count %}
+        {% if count %}
+          <span class="task-comments-count">
+            <i class="bi bi-chat me-1"></i>{{ count }}
+          </span>
+        {% endif %}
+      {% endwith %}
+    </div>
+
+    <!-- Assignee avatar -->
+    <div class="task-card-footer">
+      {% if task.assigned_to %}
+        <div class="d-flex align-items-center gap-1">
+          {% if task.assigned_to.profile.get_avatar_url %}
+            <img src="{{ task.assigned_to.profile.get_avatar_url }}"
+                 class="avatar-xs"
+                 alt="{{ task.assigned_to.username }}"
+                 title="Assigned to {{ task.assigned_to.username }}">
+          {% else %}
+            <div class="avatar-xs avatar-placeholder-xs"
+                 title="Assigned to {{ task.assigned_to.username }}">
+              {{ task.assigned_to.username|first|upper }}
+            </div>
+          {% endif %}
+          <span class="text-muted" style="font-size: 0.72rem;">{{ task.assigned_to.username }}</span>
+        </div>
+      {% else %}
+        <span class="text-muted" style="font-size: 0.72rem;">
+          <i class="bi bi-person-dash me-1"></i>Unassigned
+        </span>
+      {% endif %}
+
+      <!-- Quick actions -->
+      <div class="dropdown">
+        <button class="task-more-btn" data-bs-toggle="dropdown" title="Task actions" aria-expanded="false">
+          <i class="bi bi-three-dots"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+
+          {% if is_owner_or_admin %}
+            {% if task.status == 'review' %}
+              <li><h6 class="dropdown-header">Review submission</h6></li>
+              <li>
+                <form method="post" action="{% url 'tasks:task_approve' task.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="dropdown-item text-success">
+                    <i class="bi bi-check-circle-fill"></i>Approve &rarr; Done
+                  </button>
+                </form>
+              </li>
+              <li>
+                <form method="post" action="{% url 'tasks:task_reject' task.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="dropdown-item text-danger">
+                    <i class="bi bi-arrow-counterclockwise"></i>Send back
+                  </button>
+                </form>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+            {% endif %}
+            <li><h6 class="dropdown-header">Move to</h6></li>
+            {% if task.status != 'todo' %}
+              <li>
+                <button class="dropdown-item status-change-btn" data-task-id="{{ task.pk }}" data-status="todo">
+                  <i class="bi bi-circle text-muted"></i>To Do
+                </button>
+              </li>
+            {% endif %}
+            {% if task.status != 'inprogress' %}
+              <li>
+                <button class="dropdown-item status-change-btn" data-task-id="{{ task.pk }}" data-status="inprogress">
+                  <i class="bi bi-arrow-repeat text-warning"></i>In Progress
+                </button>
+              </li>
+            {% endif %}
+            {% if task.status != 'review' %}
+              <li>
+                <button class="dropdown-item status-change-btn" data-task-id="{{ task.pk }}" data-status="review">
+                  <i class="bi bi-eye text-purple"></i>In Review
+                </button>
+              </li>
+            {% endif %}
+            {% if task.status != 'done' %}
+              <li>
+                <button class="dropdown-item status-change-btn" data-task-id="{{ task.pk }}" data-status="done">
+                  <i class="bi bi-check-circle text-success"></i>Done
+                </button>
+              </li>
+            {% endif %}
+            <li><hr class="dropdown-divider"></li>
+
+          {% elif task.assigned_to == request.user %}
+            {% if task.status == 'todo' %}
+              <li>
+                <form method="post" action="{% url 'tasks:task_accept' task.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="dropdown-item text-primary">
+                    <i class="bi bi-play-circle-fill"></i>Accept task
+                  </button>
+                </form>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+            {% elif task.status == 'inprogress' %}
+              <li>
+                <form method="post" action="{% url 'tasks:task_submit' task.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="dropdown-item text-warning">
+                    <i class="bi bi-send-check-fill"></i>Submit for review
+                  </button>
+                </form>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+            {% elif task.status == 'review' %}
+              <li>
+                <span class="dropdown-item-text text-muted small">
+                  <i class="bi bi-hourglass-split me-1"></i>Awaiting review
+                </span>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+            {% endif %}
+          {% endif %}
+
+          <li>
+            <a class="dropdown-item" href="{% url 'tasks:task_edit' task.pk %}">
+              <i class="bi bi-pencil"></i>Edit
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>

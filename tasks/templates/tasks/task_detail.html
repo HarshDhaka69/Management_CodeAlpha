@@ -1,0 +1,396 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ task.title }} — ProjectFlow{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{% url 'projects:project_list' %}">Projects</a></li>
+    <li class="breadcrumb-item">
+      <a href="{% url 'projects:project_detail' project.pk %}">{{ project.name }}</a>
+    </li>
+    <li class="breadcrumb-item active">{{ task.title|truncatechars:30 }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row g-4">
+
+    <!-- ── Main Column: Task Details + Comments ── -->
+    <div class="col-lg-8">
+
+      <!-- Task Header Card -->
+      <div class="card card-custom mb-4">
+        <div class="task-priority-bar priority-{{ task.priority }}" style="height:4px; border-radius:12px 12px 0 0;"></div>
+        <div class="card-body p-4">
+
+          <!-- Title + Action Buttons -->
+          <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
+            <h4 class="fw-bold mb-0">{{ task.title }}</h4>
+            <div class="d-flex gap-2 flex-shrink-0">
+              <a href="{% url 'tasks:task_edit' task.pk %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-pencil me-1"></i>Edit
+              </a>
+              {% if task.created_by == request.user or is_owner_or_admin %}
+                <button class="btn btn-outline-danger btn-sm"
+                        data-bs-toggle="modal" data-bs-target="#deleteTaskModal">
+                  <i class="bi bi-trash me-1"></i>Delete
+                </button>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Badges row -->
+          <div class="d-flex flex-wrap gap-2 mb-4">
+            <!-- Status -->
+            <span class="badge rounded-pill
+              {% if task.status == 'todo' %}bg-secondary
+              {% elif task.status == 'inprogress' %}bg-warning text-dark
+              {% elif task.status == 'review' %}badge-review
+              {% else %}bg-success{% endif %} px-3 py-2">
+              {% if task.status == 'todo' %}<i class="bi bi-circle me-1"></i>To Do
+              {% elif task.status == 'inprogress' %}<i class="bi bi-arrow-repeat me-1"></i>In Progress
+              {% elif task.status == 'review' %}<i class="bi bi-eye me-1"></i>In Review
+              {% else %}<i class="bi bi-check-circle me-1"></i>Done{% endif %}
+            </span>
+
+            <!-- Priority -->
+            <span class="priority-badge priority-{{ task.priority }} px-3 py-2 rounded-pill" style="font-size:0.8rem;">
+              {% if task.priority == 'high' %}<i class="bi bi-arrow-up-circle-fill me-1"></i>High Priority
+              {% elif task.priority == 'medium' %}<i class="bi bi-dash-circle-fill me-1"></i>Medium Priority
+              {% else %}<i class="bi bi-arrow-down-circle-fill me-1"></i>Low Priority{% endif %}
+            </span>
+
+            <!-- Due Date -->
+            {% if task.due_date %}
+              {% if task.is_overdue %}
+                <span class="due-badge due-overdue px-3 py-2 rounded-pill" style="font-size:0.8rem;">
+                  <i class="bi bi-clock-fill me-1"></i>Overdue — {{ task.due_date|date:"M j, Y" }}
+                </span>
+              {% else %}
+                <span class="due-badge due-normal px-3 py-2 rounded-pill" style="font-size:0.8rem;">
+                  <i class="bi bi-calendar3 me-1"></i>Due {{ task.due_date|date:"M j, Y" }}
+                </span>
+              {% endif %}
+            {% endif %}
+          </div>
+
+          <!-- Description -->
+          <h6 class="fw-semibold text-muted text-uppercase mb-2" style="font-size:0.72rem; letter-spacing:0.06em;">
+            Description
+          </h6>
+          {% if task.description %}
+            <div class="task-description">{{ task.description|linebreaks }}</div>
+          {% else %}
+            <p class="text-muted fst-italic">No description provided.</p>
+          {% endif %}
+
+        </div>
+      </div>
+
+      <!-- ── Comments Section ── -->
+      <div class="card card-custom">
+        <div class="card-header bg-transparent border-0 pb-0">
+          <h6 class="fw-bold mb-0">
+            <i class="bi bi-chat-dots me-2 text-primary"></i>
+            Comments <span class="text-muted fw-normal">({{ comments.count }})</span>
+          </h6>
+        </div>
+        <div class="card-body">
+
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <!-- Comment Thread -->
+          {% if comments %}
+            <div class="comment-thread mb-4">
+              {% for comment in comments %}
+                <div class="comment-item" id="comment-{{ comment.pk }}">
+
+                  <!-- Author avatar -->
+                  <div class="comment-avatar">
+                    {% if comment.author.profile.get_avatar_url %}
+                      <img src="{{ comment.author.profile.get_avatar_url }}"
+                           class="avatar-md" alt="{{ comment.author.username }}">
+                    {% else %}
+                      <div class="avatar-md avatar-placeholder">
+                        {{ comment.author.username|first|upper }}
+                      </div>
+                    {% endif %}
+                  </div>
+
+                  <!-- Comment body -->
+                  <div class="comment-body flex-grow-1">
+                    <div class="comment-header">
+                      <a href="{% url 'accounts:profile_user' comment.author.username %}"
+                         class="fw-semibold text-decoration-none text-dark">
+                        {{ comment.author.get_full_name|default:comment.author.username }}
+                      </a>
+                      <span class="text-muted small ms-2">{{ comment.created_at|timesince }} ago</span>
+
+                      {% if comment.author == request.user %}
+                        <form method="post" action="{% url 'tasks:comment_delete' comment.pk %}"
+                              class="d-inline ms-auto"
+                              onsubmit="return confirm('Delete this comment?')">
+                          {% csrf_token %}
+                          <button type="submit" class="btn btn-link btn-sm text-danger p-0 ms-2" title="Delete comment">
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </form>
+                      {% endif %}
+                    </div>
+                    <div class="comment-content">{{ comment.content|linebreaks }}</div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center py-3 mb-3">
+              <i class="bi bi-chat-square text-muted" style="font-size:2rem;"></i>
+              <p class="text-muted small mt-2 mb-0">No comments yet. Be the first!</p>
+            </div>
+          {% endif %}
+
+          <!-- New Comment Form -->
+          <div class="new-comment-form">
+            <div class="d-flex gap-3">
+              <!-- Current user avatar -->
+              <div class="flex-shrink-0">
+                {% if request.user.profile.get_avatar_url %}
+                  <img src="{{ request.user.profile.get_avatar_url }}"
+                       class="avatar-md" alt="{{ request.user.username }}">
+                {% else %}
+                  <div class="avatar-md avatar-placeholder">
+                    {{ request.user.username|first|upper }}
+                  </div>
+                {% endif %}
+              </div>
+
+              <!-- Form -->
+              <div class="flex-grow-1">
+                <form method="post">
+                  {% csrf_token %}
+                  {{ comment_form.content }}
+                  <div class="mt-2">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                      <i class="bi bi-send me-1"></i>Post Comment
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Sidebar: Task Meta ── -->
+    <div class="col-lg-4">
+
+      <!-- Assignee Card -->
+      <div class="card card-custom mb-3">
+        <div class="card-body p-3">
+          <h6 class="fw-semibold text-muted text-uppercase mb-3" style="font-size:0.72rem; letter-spacing:0.06em;">
+            Assignee
+          </h6>
+          {% if task.assigned_to %}
+            <div class="d-flex align-items-center gap-2">
+              {% if task.assigned_to.profile.get_avatar_url %}
+                <img src="{{ task.assigned_to.profile.get_avatar_url }}"
+                     class="avatar-md" alt="{{ task.assigned_to.username }}">
+              {% else %}
+                <div class="avatar-md avatar-placeholder">
+                  {{ task.assigned_to.username|first|upper }}
+                </div>
+              {% endif %}
+              <div>
+                <div class="fw-semibold">
+                  {{ task.assigned_to.get_full_name|default:task.assigned_to.username }}
+                </div>
+                <div class="text-muted small">@{{ task.assigned_to.username }}</div>
+              </div>
+            </div>
+          {% else %}
+            <div class="text-muted small">
+              <i class="bi bi-person-dash me-1"></i>No one assigned
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Task Info Card -->
+      <div class="card card-custom mb-3">
+        <div class="card-body p-3">
+          <h6 class="fw-semibold text-muted text-uppercase mb-3" style="font-size:0.72rem; letter-spacing:0.06em;">
+            Task Info
+          </h6>
+          <dl class="task-meta-list">
+            <div class="meta-row">
+              <dt><i class="bi bi-person me-1 text-muted"></i>Created by</dt>
+              <dd>
+                <a href="{% url 'accounts:profile_user' task.created_by.username %}"
+                   class="text-decoration-none">
+                  {{ task.created_by.username }}
+                </a>
+              </dd>
+            </div>
+            <div class="meta-row">
+              <dt><i class="bi bi-calendar-plus me-1 text-muted"></i>Created</dt>
+              <dd>{{ task.created_at|date:"M j, Y" }}</dd>
+            </div>
+            <div class="meta-row">
+              <dt><i class="bi bi-calendar-check me-1 text-muted"></i>Updated</dt>
+              <dd>{{ task.updated_at|timesince }} ago</dd>
+            </div>
+            <div class="meta-row">
+              <dt><i class="bi bi-folder me-1 text-muted"></i>Project</dt>
+              <dd>
+                <a href="{% url 'projects:project_detail' project.pk %}"
+                   class="text-decoration-none">
+                  {{ project.name }}
+                </a>
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <!-- Status / Workflow -->
+      <div class="card card-custom">
+        <div class="card-body p-3">
+          <h6 class="fw-semibold text-muted text-uppercase mb-3" style="font-size:0.72rem; letter-spacing:0.06em;">
+            {% if is_owner_or_admin %}Change Status{% else %}Workflow{% endif %}
+          </h6>
+
+          {% if is_owner_or_admin %}
+
+            {% if task.status == 'review' %}
+              <p class="task-workflow-note mb-3">
+                <i class="bi bi-info-circle"></i>
+                {{ task.assigned_to.username|default:'The assignee' }} submitted this for review.
+              </p>
+              <div class="d-flex flex-column gap-2 mb-3">
+                <form method="post" action="{% url 'tasks:task_approve' task.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="task-workflow-btn task-workflow-btn-approve">
+                    <i class="bi bi-check-circle-fill"></i>Approve &rarr; Done
+                  </button>
+                </form>
+                <form method="post" action="{% url 'tasks:task_reject' task.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="task-workflow-btn task-workflow-btn-reject">
+                    <i class="bi bi-arrow-counterclockwise"></i>Send back to In Progress
+                  </button>
+                </form>
+              </div>
+              <hr>
+            {% endif %}
+
+            <div class="d-flex flex-column gap-2">
+              {% for status_value, status_label in task.STATUS_CHOICES %}
+                <button class="btn btn-sm status-change-btn w-100 text-start
+                  {% if task.status == status_value %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+                        data-task-id="{{ task.pk }}"
+                        data-status="{{ status_value }}"
+                        {% if task.status == status_value %}disabled{% endif %}>
+                  {% if status_value == 'todo' %}<i class="bi bi-circle me-2"></i>
+                  {% elif status_value == 'inprogress' %}<i class="bi bi-arrow-repeat me-2"></i>
+                  {% elif status_value == 'review' %}<i class="bi bi-eye me-2"></i>
+                  {% else %}<i class="bi bi-check-circle me-2"></i>{% endif %}
+                  {{ status_label }}
+                  {% if task.status == status_value %}
+                    <i class="bi bi-check ms-auto float-end mt-1"></i>
+                  {% endif %}
+                </button>
+              {% endfor %}
+            </div>
+
+          {% elif task.assigned_to == request.user %}
+
+            {% if task.status == 'todo' %}
+              <p class="text-muted small mb-3">Ready to start? Accepting moves this straight to In Progress.</p>
+              <form method="post" action="{% url 'tasks:task_accept' task.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="task-workflow-btn task-workflow-btn-accept">
+                  <i class="bi bi-play-circle-fill"></i>Accept Task
+                </button>
+              </form>
+
+            {% elif task.status == 'inprogress' %}
+              <p class="text-muted small mb-3">Done with your work? Submit it for {{ task.created_by.username }} to review.</p>
+              <form method="post" action="{% url 'tasks:task_submit' task.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="task-workflow-btn task-workflow-btn-submit">
+                  <i class="bi bi-send-check-fill"></i>Submit for Review
+                </button>
+              </form>
+
+            {% elif task.status == 'review' %}
+              <p class="task-workflow-note mb-0">
+                <i class="bi bi-hourglass-split"></i>
+                Waiting on {{ task.created_by.username }} to review your submission.
+              </p>
+
+            {% else %}
+              <p class="task-workflow-note mb-0">
+                <i class="bi bi-check-circle-fill text-success"></i>
+                This task is done. Nice work!
+              </p>
+            {% endif %}
+
+          {% else %}
+            <p class="task-workflow-note mb-0">
+              <i class="bi bi-lock"></i>
+              Only {{ task.assigned_to.username|default:'the assignee' }} or a project admin can move this task.
+            </p>
+          {% endif %}
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- Delete Task Modal -->
+{% if task.created_by == request.user or is_owner_or_admin %}
+<div class="modal fade" id="deleteTaskModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">
+          <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Delete Task
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Delete <strong>{{ task.title }}</strong>?</p>
+        <p class="text-danger small mb-0">All comments on this task will also be deleted.</p>
+      </div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <form method="post" action="{% url 'tasks:task_delete' task.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">
+            <i class="bi bi-trash me-1"></i>Delete Task
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Task — ProjectFlow{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 500px;">
+  <div class="card card-custom border-danger">
+    <div class="card-body text-center p-5">
+      <div class="mb-3" style="font-size: 3rem; color: var(--danger);">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </div>
+      <h4 class="fw-bold mb-2">Delete Task</h4>
+      <p class="text-muted mb-1">You are about to permanently delete:</p>
+      <p class="fw-bold fs-5 mb-1">{{ task.title }}</p>
+      <p class="text-muted small mb-4">in project <strong>{{ project.name }}</strong></p>
+      <p class="text-danger small mb-4">All comments on this task will also be deleted.</p>
+      <div class="d-flex gap-2 justify-content-center">
+        <a href="{% url 'tasks:task_detail' task.pk %}" class="btn btn-outline-secondary">Cancel</a>
+        <form method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">
+            <i class="bi bi-trash me-1"></i>Yes, Delete
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
