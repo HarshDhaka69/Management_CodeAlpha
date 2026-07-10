@@ -1,0 +1,202 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}ProjectFlow{% endblock %}</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5.3 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}app-layout{% endblock %}">
+
+{% if user.is_authenticated %}
+
+<!-- ══════════════════════════════════════════════════════
+     AUTHENTICATED LAYOUT: Sidebar + Topbar + Content
+══════════════════════════════════════════════════════ -->
+
+<!-- ── Sidebar ────────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+
+  <!-- Brand -->
+  <div class="sidebar-brand">
+    <a href="{% url 'projects:project_list' %}" class="brand-link">
+      <div class="brand-icon">
+        <i class="bi bi-kanban-fill"></i>
+      </div>
+      <span class="brand-text">ProjectFlow</span>
+    </a>
+    <button class="sidebar-close-btn d-lg-none" id="sidebarClose">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="sidebar-nav">
+
+    <div class="sidebar-section-label">Main</div>
+
+    <a href="{% url 'projects:project_list' %}"
+       class="sidebar-link {% if request.resolver_match.app_name == 'projects' %}active{% endif %}">
+      <i class="bi bi-folder2-open"></i>
+      <span>Projects</span>
+    </a>
+
+    <a href="{% url 'notifications:notification_list' %}"
+       class="sidebar-link {% if request.resolver_match.app_name == 'notifications' %}active{% endif %}">
+      <i class="bi bi-bell"></i>
+      <span>Notifications</span>
+      <span class="sidebar-badge" id="sidebar-notif-badge" style="display:none;"></span>
+    </a>
+
+    <div class="sidebar-section-label mt-3">Account</div>
+
+    <a href="{% url 'accounts:profile' %}"
+       class="sidebar-link {% if request.resolver_match.app_name == 'accounts' %}active{% endif %}">
+      <i class="bi bi-person-circle"></i>
+      <span>My Profile</span>
+    </a>
+
+    <a href="{% url 'accounts:logout' %}" class="sidebar-link sidebar-link-danger">
+      <i class="bi bi-box-arrow-left"></i>
+      <span>Sign Out</span>
+    </a>
+  </nav>
+
+  <!-- User card at bottom -->
+  <div class="sidebar-user">
+    {% if user.profile.get_avatar_url %}
+      <img src="{{ user.profile.get_avatar_url }}" class="sidebar-user-avatar" alt="{{ user.username }}">
+    {% else %}
+      <div class="sidebar-user-avatar avatar-placeholder">{{ user.username|first|upper }}</div>
+    {% endif %}
+    <div class="sidebar-user-info">
+      <div class="sidebar-user-name">{{ user.get_full_name|default:user.username }}</div>
+      <div class="sidebar-user-role">@{{ user.username }}</div>
+    </div>
+  </div>
+
+</aside>
+
+<!-- Sidebar backdrop (mobile) -->
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<!-- ── Main Wrapper ────────────────────────────────────── -->
+<div class="main-wrapper">
+
+  <!-- ── Top Navbar ───────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <!-- Mobile hamburger -->
+      <button class="topbar-hamburger d-lg-none" id="sidebarToggle">
+        <i class="bi bi-list"></i>
+      </button>
+      <!-- Breadcrumb -->
+      {% block breadcrumb %}{% endblock %}
+    </div>
+
+    <div class="topbar-right">
+      <!-- New Project quick button -->
+      <a href="{% url 'projects:project_create' %}" class="btn btn-primary btn-sm d-none d-md-inline-flex">
+        <i class="bi bi-plus me-1"></i>New Project
+      </a>
+
+      <!-- Notifications Bell -->
+      <div class="topbar-notif-wrapper">
+        <a href="{% url 'notifications:notification_list' %}" class="topbar-notif-btn" id="notifBellBtn"
+           title="Notifications">
+          <i class="bi bi-bell-fill"></i>
+          <span class="notif-badge" id="notif-badge" style="display:none;">0</span>
+        </a>
+      </div>
+
+      <!-- User Dropdown -->
+      <div class="dropdown">
+        <button class="topbar-user-btn dropdown-toggle" data-bs-toggle="dropdown">
+          {% if user.profile.get_avatar_url %}
+            <img src="{{ user.profile.get_avatar_url }}" class="topbar-avatar" alt="{{ user.username }}">
+          {% else %}
+            <div class="topbar-avatar avatar-placeholder-sm">{{ user.username|first|upper }}</div>
+          {% endif %}
+          <span class="d-none d-md-inline ms-2 fw-medium">{{ user.get_full_name|default:user.username }}</span>
+          <i class="bi bi-chevron-down ms-1 small"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm mt-1">
+          <li>
+            <div class="dropdown-header">
+              <div class="fw-semibold">{{ user.get_full_name|default:user.username }}</div>
+              <div class="text-muted small">{{ user.email }}</div>
+            </div>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <a class="dropdown-item" href="{% url 'accounts:profile' %}">
+              <i class="bi bi-person me-2"></i>My Profile
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="{% url 'projects:project_create' %}">
+              <i class="bi bi-folder-plus me-2"></i>New Project
+            </a>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <a class="dropdown-item text-danger" href="{% url 'accounts:logout' %}">
+              <i class="bi bi-box-arrow-left me-2"></i>Sign Out
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Page Content ─────────────────────────────────── -->
+  <main class="main-content">
+{% else %}
+<!-- ══════════════════════════════════════════════════
+     UNAUTHENTICATED LAYOUT: Centered auth pages
+══════════════════════════════════════════════════ -->
+<main>
+{% endif %}
+    {% block content %}{% endblock %}
+{% if user.is_authenticated %}
+  </main>
+
+</div><!-- /main-wrapper -->
+{% else %}
+</main>
+{% endif %}
+
+<!-- ── Toast Container ────────────────────────────────── -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer" style="z-index: 9999;"></div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- CSRF token for AJAX (must load before main.js, which reads these on init) -->
+<script>
+  const CSRF_TOKEN = '{{ csrf_token }}';
+  const USER_AUTHENTICATED = {% if user.is_authenticated %}true{% else %}false{% endif %};
+</script>
+
+<!-- Main JS (WebSocket + UI) -->
+<script src="{% static 'js/main.js' %}"></script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>
