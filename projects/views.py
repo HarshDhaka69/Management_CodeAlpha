@@ -69,6 +69,7 @@ def project_detail(request, pk):
     from tasks.models import Task
     tasks_todo = project.tasks.filter(status='todo').select_related('assigned_to', 'created_by')
     tasks_inprogress = project.tasks.filter(status='inprogress').select_related('assigned_to', 'created_by')
+    tasks_review = project.tasks.filter(status='review').select_related('assigned_to', 'created_by')
     tasks_done = project.tasks.filter(status='done').select_related('assigned_to', 'created_by')
 
     members = ProjectMember.objects.filter(project=project).select_related('user', 'user__profile')
@@ -78,6 +79,7 @@ def project_detail(request, pk):
         'project': project,
         'tasks_todo': tasks_todo,
         'tasks_inprogress': tasks_inprogress,
+        'tasks_review': tasks_review,
         'tasks_done': tasks_done,
         'members': members,
         'user_membership': user_membership,

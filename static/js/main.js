@@ -1,5 +1,5 @@
 /**
- * ProjectFlow — Main JavaScript
+ * ProjectManager — Main JavaScript
  * Handles:
  *   - Sidebar toggle (mobile)
  *   - WebSocket connection for real-time notifications

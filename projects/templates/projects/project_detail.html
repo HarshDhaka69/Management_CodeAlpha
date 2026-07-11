@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ project.name }} — ProjectFlow{% endblock %}
+{% block title %}{{ project.name }} — ProjectManager{% endblock %}
 
 {% block breadcrumb %}
 <nav aria-label="breadcrumb">
@@ -113,9 +113,11 @@
           <span class="fw-semibold">In Progress</span>
           <span class="kanban-count">{{ tasks_inprogress.count }}</span>
         </div>
+        {% if is_owner_or_admin %}
         <a href="{% url 'tasks:task_create' project.pk %}?status=inprogress" class="kanban-add-btn" title="Add task">
           <i class="bi bi-plus"></i>
         </a>
+        {% endif %}
       </div>
       <div class="kanban-cards">
         {% for task in tasks_inprogress %}
@@ -129,6 +131,27 @@
       </div>
     </div>
 
+    <!-- IN REVIEW Column -->
+    <div class="kanban-column">
+      <div class="kanban-col-header kanban-review">
+        <div class="d-flex align-items-center gap-2">
+          <span class="kanban-dot"></span>
+          <span class="fw-semibold">In Review</span>
+          <span class="kanban-count">{{ tasks_review.count }}</span>
+        </div>
+      </div>
+      <div class="kanban-cards">
+        {% for task in tasks_review %}
+          {% include 'tasks/task_card.html' with task=task %}
+        {% empty %}
+          <div class="kanban-empty">
+            <i class="bi bi-eye"></i>
+            <p>Nothing awaiting review</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
     <!-- DONE Column -->
     <div class="kanban-column">
       <div class="kanban-col-header kanban-done">
@@ -137,9 +160,11 @@
           <span class="fw-semibold">Done</span>
           <span class="kanban-count">{{ tasks_done.count }}</span>
         </div>
+        {% if is_owner_or_admin %}
         <a href="{% url 'tasks:task_create' project.pk %}?status=done" class="kanban-add-btn" title="Add task">
           <i class="bi bi-plus"></i>
         </a>
+        {% endif %}
       </div>
       <div class="kanban-cards">
         {% for task in tasks_done %}

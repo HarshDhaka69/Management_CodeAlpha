@@ -17,7 +17,7 @@ def register_view(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            messages.success(request, f'Welcome to ProjectFlow, {user.username}! 🎉')
+            messages.success(request, f'Welcome to ProjectManager, {user.username}! 🎉')
             return redirect('projects:project_list')
         else:
             messages.error(request, 'Please fix the errors below.')
