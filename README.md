@@ -44,7 +44,7 @@
 
 | Dashboard | Kanban Board | Task Detail |
 |---|---|---|
-| ![Dashboard](docs/screenshots/dashboard.png) | ![Board](docs/screenshots/board.png) | ![Task](docs/screenshots/task.png) |
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Board](docs/screenshots/kanban.png) | ![Task](docs/screenshots/Tasks.png) |
 
 | Login Page | Project List | Notifications |
 |---|---|---|
