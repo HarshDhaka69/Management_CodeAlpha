@@ -17,7 +17,7 @@
 
   <br/>
 
-  **[🚀 Live Demo](#)** • **[📸 Screenshots](#-screenshots)** • **[🛠 Setup](#️-local-setup)** • **[📁 Structure](#-project-structure)**
+   • **[📸 Screenshots](#-screenshots)** • **[🛠 Setup](#️-local-setup)** • **[📁 Structure](#-project-structure)**
 
 </div>
 
