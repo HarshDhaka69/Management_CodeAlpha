@@ -1,4 +1,4 @@
-# 📋 ProjectFlow — Team Project Management Tool
+# 📋 ProjectManager — Team Project Management Tool
 
 <div align="center">
 
