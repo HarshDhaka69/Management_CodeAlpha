@@ -44,11 +44,11 @@
 
 | Dashboard | Kanban Board | Task Detail |
 |---|---|---|
-| ![Dashboard](docs/screenshots/dashboard.png) | ![Board](docs/screenshots/kanban.png) | ![Task](docs/screenshots/Tasks.png) |
+| ![Dashboard](docs/screenshots/Dashboard.png) | ![Board](docs/screenshots/Kanban.png) | ![Task](docs/screenshots/Tasks.png) |
 
 | Login Page | Project List | Notifications |
 |---|---|---|
-| ![Login](docs/screenshots/login.png) | ![Projects](docs/screenshots/projects.png) | ![Notifs](docs/screenshots/notifications.png) |
+| ![Login](docs/screenshots/Login.png) | ![Projects](docs/screenshots/Projects.png) | ![Notifs](docs/screenshots/Notifications.png) |
 
 ---
 
